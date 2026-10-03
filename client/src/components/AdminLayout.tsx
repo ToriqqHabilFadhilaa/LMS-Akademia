@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../context/useAuth";
+import logo from "../assets/Logo.png";
 
 type NavItem = {
     to: string;
@@ -96,7 +97,7 @@ const AdminLayout = () => {
             <aside className={`admin-sidebar ${!isSidebarOpen ? "admin-sidebar-collapsed" : ""}`}>
                 <div className="admin-sidebar-inner">
                     <div className="admin-brand">
-                        <div className="admin-brand-logo">A</div>
+                        <img className="admin-brand-logo" src={logo} alt="Akademia" />
 
                         <div>
                             <h2>Akademia</h2>

@@ -14,6 +14,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { useAuth } from "../context/useAuth";
+import logo from "../assets/Logo.png";
 
 interface StudentLayoutProps {
     children?: ReactNode;
@@ -66,7 +67,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
             <header className="student-header">
                 <div className="student-header-bar">
                     <div className="student-brand">
-                        <span className="student-brand-mark">A</span>
+                        <img className="student-brand-mark" src={logo} alt="Akademia" />
                         <div>
                             <span className="student-brand-name">Akademia</span>
                             <span className="student-brand-tagline">

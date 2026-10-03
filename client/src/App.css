@@ -40,15 +40,12 @@
 }
 
 .student-brand-mark {
-    display: grid;
-    place-items: center;
+    display: block;
     width: 34px;
     height: 34px;
+    flex-shrink: 0;
+    object-fit: contain;
     border-radius: 9px;
-    background: linear-gradient(160deg, var(--sl-accent), var(--sl-accent-dark));
-    color: #ffffff;
-    font-size: 1.05rem;
-    font-weight: 800;
 }
 
 .student-brand-name {
@@ -2462,16 +2459,12 @@
 }
 
 .admin-brand-logo {
-    display: grid;
-    place-items: center;
+    display: block;
     width: 36px;
     height: 36px;
     flex-shrink: 0;
+    object-fit: contain;
     border-radius: 9px;
-    background: linear-gradient(160deg, #2563eb, #1d4ed8);
-    color: #ffffff;
-    font-size: 1.1rem;
-    font-weight: 800;
 }
 
 .admin-brand h2 {
@@ -6770,11 +6763,6 @@ body {
 .student-header {
     border-color: var(--akademia-line);
     box-shadow: 0 2px 12px rgba(15, 23, 42, 0.025);
-}
-
-.admin-brand-logo,
-.student-brand-mark {
-    background: linear-gradient(145deg, #3b82f6, #1d4ed8);
 }
 
 .student-content {
