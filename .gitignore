@@ -1,0 +1,12 @@
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/coverage/
+**/.agents/
+**/.windsurf/
+**/.env
+**/.env.*
+!**/.env.example
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,431 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  LECTURER
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum CourseMemberRole {
+  STUDENT
+  TEACHING_ASSISTANT
+}
+
+enum OfferingStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  LATE
+  GRADED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+  BLOCKED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  ESSAY
+  SHORT_ANSWER
+}
+
+enum EventType {
+  TAB_SWITCH
+  WINDOW_BLUR
+  FULLSCREEN_EXIT
+  COPY
+  PASTE
+  REFRESH
+  MULTIPLE_SESSION
+  CONNECTION_LOST
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id       String     @id @default(uuid(7))
+  name     String
+  email    String     @unique
+  password String
+  role     UserRole   @default(STUDENT)
+  status   UserStatus @default(ACTIVE)
+
+  emailVerifiedAt DateTime?
+  deletedAt       DateTime?
+
+  coursesTaught CourseOffering[]
+  courseMembers CourseMember[]
+
+  submissions       Submission[]
+  gradedSubmissions Submission[] @relation("SubmissionGrader")
+
+  examAttempts ExamAttempt[]
+
+  createdQuestions Question[]
+
+  gradeAudits GradeAudit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model Course {
+  id          String  @id @default(uuid(7))
+  code        String  @unique
+  name        String
+  description String?
+
+  offerings CourseOffering[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CourseOffering {
+  id String @id @default(uuid(7))
+
+  courseId   String
+  lecturerId String
+
+  term    String
+  section String @default("A")
+
+  status OfferingStatus @default(DRAFT)
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  lecturer User   @relation(fields: [lecturerId], references: [id], onDelete: Restrict)
+
+  members     CourseMember[]
+  materials   Material[]
+  assignments Assignment[]
+  exams       Exam[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, term, section])
+  @@index([lecturerId])
+  @@index([term])
+  @@index([status])
+}
+
+model CourseMember {
+  id String @id @default(uuid(7))
+
+  courseOfferingId String
+  userId           String
+
+  role CourseMemberRole @default(STUDENT)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id], onDelete: Restrict)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  joinedAt DateTime @default(now())
+
+  @@unique([courseOfferingId, userId])
+  @@index([userId])
+  @@index([role])
+}
+
+model Material {
+  id String @id @default(uuid(7))
+
+  courseOfferingId String
+
+  title       String
+  description String?
+  fileUrl     String?
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseOfferingId])
+}
+
+model Assignment {
+  id String @id @default(uuid(7))
+
+  courseOfferingId String
+
+  title       String
+  description String?
+
+  deadline DateTime
+  maxScore Float    @default(100)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id], onDelete: Restrict)
+
+  submissions Submission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseOfferingId])
+  @@index([deadline])
+}
+
+model Submission {
+  id String @id @default(uuid(7))
+
+  assignmentId String
+  studentId    String
+
+  fileUrl String?
+
+  submittedAt DateTime @default(now())
+
+  score    Float?
+  feedback String?
+
+  status SubmissionStatus @default(SUBMITTED)
+
+  gradedById String?
+  gradedAt   DateTime?
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  student    User       @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  gradedBy   User?      @relation("SubmissionGrader", fields: [gradedById], references: [id], onDelete: Restrict)
+
+  gradeAudits GradeAudit[]
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
+  @@index([gradedById])
+  @@index([submittedAt])
+}
+
+model GradeAudit {
+  id String @id @default(uuid(7))
+
+  submissionId String
+  gradedById   String
+
+  previousScore Float?
+  newScore      Float?
+
+  feedback String?
+
+  createdAt DateTime @default(now())
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  gradedBy   User       @relation(fields: [gradedById], references: [id], onDelete: Restrict)
+
+  @@index([submissionId])
+  @@index([gradedById])
+  @@index([createdAt])
+}
+
+model Exam {
+  id String @id @default(uuid(7))
+
+  courseOfferingId String
+
+  title       String
+  description String?
+
+  durationMinutes Int
+
+  startAt DateTime
+  endAt   DateTime
+
+  maxAttempts Int @default(1)
+
+  passingScore Float @default(75)
+
+  shuffleQuestions Boolean @default(false)
+  shuffleAnswers   Boolean @default(false)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id], onDelete: Restrict)
+
+  questions ExamQuestion[]
+  attempts  ExamAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseOfferingId])
+  @@index([startAt, endAt])
+}
+
+model Question {
+  id String @id @default(uuid(7))
+
+  createdById String
+
+  questionType QuestionType
+
+  questionText String
+
+  options       Json?
+  correctAnswer String?
+
+  points Int @default(1)
+
+  isActive Boolean @default(true)
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  exams            ExamQuestion[]
+  attemptQuestions AttemptQuestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([questionType])
+  @@index([isActive])
+}
+
+model ExamQuestion {
+  id String @id @default(uuid(7))
+
+  examId     String
+  questionId String
+
+  orderNumber Int
+
+  exam     Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([examId, questionId])
+  @@unique([examId, orderNumber])
+  @@index([questionId])
+}
+
+model ExamAttempt {
+  id String @id @default(uuid(7))
+
+  examId    String
+  studentId String
+
+  attemptNumber Int
+
+  startedAt   DateTime
+  submittedAt DateTime?
+
+  status AttemptStatus @default(IN_PROGRESS)
+
+  ipAddress String?
+  userAgent String?
+  sessionId String?
+
+  exam    Exam @relation(fields: [examId], references: [id], onDelete: Restrict)
+  student User @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  questions  AttemptQuestion[]
+  answers    Answer[]
+  activities ActivityLog[]
+  riskScore RiskScore?
+  retakeGrantedAt DateTime?
+  retakeConsumedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([examId, studentId, attemptNumber])
+  @@index([studentId])
+  @@index([examId])
+  @@index([status])
+}
+
+model AttemptQuestion {
+  id                    String  @id @default(uuid(7))
+  attemptId             String
+  questionId            String
+  orderNumber           Int
+  questionTextSnapshot  String
+  optionsSnapshot       Json?
+  shuffledOptions       Json?
+  correctAnswerSnapshot String?
+  pointsSnapshot        Int
+
+  attempt  ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  answer   Answer?
+
+  @@unique([attemptId, questionId])
+  @@unique([attemptId, orderNumber])
+  @@index([questionId])
+}
+
+model Answer {
+  id String @id @default(uuid(7))
+
+  attemptId         String
+  attemptQuestionId String
+
+  answer String?
+
+  isCorrect Boolean?
+  points    Float?
+
+  attempt         ExamAttempt     @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  attemptQuestion AttemptQuestion @relation(fields: [attemptQuestionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptQuestionId])
+  @@index([attemptId])
+}
+
+model ActivityLog {
+  id String @id @default(uuid(7))
+
+  attemptId String
+
+  eventType EventType
+
+  eventData Json?
+
+  occurredAt DateTime @default(now())
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([eventType])
+  @@index([occurredAt])
+}
+
+model RiskScore {
+  id String @id @default(uuid(7))
+
+  attemptId String @unique
+
+  score     Int       @default(0)
+  riskLevel RiskLevel @default(LOW)
+
+  calculatedAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}

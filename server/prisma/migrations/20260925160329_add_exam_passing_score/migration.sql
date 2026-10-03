@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Exam" ADD COLUMN     "passingScore" DOUBLE PRECISION NOT NULL DEFAULT 75;
